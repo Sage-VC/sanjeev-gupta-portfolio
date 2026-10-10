@@ -55,11 +55,6 @@ async function handleContact(request, env) {
     return json({ ok: false, error: 'Invalid request.' }, 400);
   }
 
-  // Honeypot: real visitors never see or fill this field. Pretend success.
-  if (typeof data.website === 'string' && data.website.trim() !== '') {
-    return json({ ok: true });
-  }
-
   const fields = {
     intent: INTENTS[data.intent] || INTENTS.other,
     name: clean(data.name, LIMITS.name),
