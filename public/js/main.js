@@ -302,50 +302,113 @@ function initContactForm() {
   const form = document.getElementById('executive-contact-form');
   if (!form) return;
 
-  form.addEventListener('submit', (e) => {
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalBtnText = submitBtn.innerHTML;
+  const turnstileSiteKey = form.dataset.turnstileSitekey;
+  let turnstileWidgetId = null;
+
+  if (turnstileSiteKey) {
+    const slot = form.querySelector('.turnstile-slot');
+    window.onTurnstileLoad = () => {
+      slot.hidden = false;
+      turnstileWidgetId = window.turnstile.render(slot, { sitekey: turnstileSiteKey });
+    };
+    const script = document.createElement('script');
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  const showNotice = (html, isError) => {
+    form.querySelector('.form-notice')?.remove();
+    const notice = document.createElement('div');
+    notice.className = 'form-notice';
+    notice.setAttribute('role', isError ? 'alert' : 'status');
+    notice.style.marginTop = '1.5rem';
+    notice.style.padding = '1.25rem';
+    notice.style.background = isError ? '#FDF3F2' : '#F8F6F0';
+    notice.style.border = `1px solid ${isError ? '#C0564B' : '#C5A880'}`;
+    notice.style.borderRadius = '8px';
+    notice.style.color = '#0F1D36';
+    notice.style.fontSize = '0.95rem';
+    notice.innerHTML = html;
+    form.appendChild(notice);
+  };
+
+  const escapeHtml = (value) => value.replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  const resetButton = () => {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalBtnText;
+    submitBtn.style.background = '';
+    submitBtn.style.color = '';
+  };
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const name = form.querySelector('#name')?.value.trim();
     const email = form.querySelector('#email')?.value.trim();
     const message = form.querySelector('#message')?.value.trim();
-    const submitBtn = form.querySelector('button[type="submit"]');
 
     if (!name || !email || !message) {
       alert('Please complete the required fields (Name, Email, and Message) to start a conversation.');
       return;
     }
 
-    const originalBtnText = submitBtn.innerHTML;
+    const payload = {
+      intent: form.querySelector('input[name="intent"]:checked')?.value || 'other',
+      name,
+      email,
+      organisation: form.querySelector('#organisation')?.value.trim() || '',
+      message,
+      website: form.querySelector('#website')?.value || '',
+      turnstileToken: form.querySelector('[name="cf-turnstile-response"]')?.value || ''
+    };
+
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span>Sending Enquiry...</span>';
 
-    setTimeout(() => {
-      submitBtn.innerHTML = '<span>Message Received</span>';
-      submitBtn.style.background = '#0F1D36';
-      submitBtn.style.color = '#C5A880';
+    let result;
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      result = await res.json().catch(() => ({ ok: false }));
+    } catch {
+      result = { ok: false };
+    }
 
-      const successNotice = document.createElement('div');
-      successNotice.style.marginTop = '1.5rem';
-      successNotice.style.padding = '1.25rem';
-      successNotice.style.background = '#F8F6F0';
-      successNotice.style.border = '1px solid #C5A880';
-      successNotice.style.borderRadius = '8px';
-      successNotice.style.color = '#0F1D36';
-      successNotice.style.fontSize = '0.95rem';
-      successNotice.innerHTML = `
-        <strong>Thank you, ${name}.</strong><br>
-        Your note has been received. I will review your situation and reach out to you directly to arrange an initial exploratory conversation.
-      `;
+    if (window.turnstile && turnstileWidgetId !== null) {
+      window.turnstile.reset(turnstileWidgetId);
+    }
 
-      form.appendChild(successNotice);
-      form.reset();
+    if (!result.ok) {
+      resetButton();
+      const reason = result.error ? escapeHtml(result.error) : 'Sorry, your message could not be sent.';
+      showNotice(`
+        <strong>${reason}</strong><br>
+        You can also email me directly at
+        <a href="mailto:sanjeev70.gupta@gmail.com">sanjeev70.gupta@gmail.com</a>.
+      `, true);
+      return;
+    }
 
-      setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
-        submitBtn.style.background = '';
-        submitBtn.style.color = '';
-      }, 5000);
-    }, 900);
+    submitBtn.innerHTML = '<span>Message Received</span>';
+    submitBtn.style.background = '#0F1D36';
+    submitBtn.style.color = '#C5A880';
+
+    showNotice(`
+      <strong>Thank you, ${escapeHtml(name)}.</strong><br>
+      Your note has been received. I will review your situation and reach out to you directly to arrange an initial exploratory conversation.
+    `, false);
+    form.reset();
+
+    setTimeout(resetButton, 5000);
   });
 }
