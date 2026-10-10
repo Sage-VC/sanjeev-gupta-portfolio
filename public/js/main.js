@@ -365,7 +365,6 @@ function initContactForm() {
       email,
       organisation: form.querySelector('#organisation')?.value.trim() || '',
       message,
-      website: form.querySelector('#website')?.value || '',
       turnstileToken: form.querySelector('[name="cf-turnstile-response"]')?.value || ''
     };
 
