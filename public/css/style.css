@@ -1283,6 +1283,16 @@ p:last-child {
   box-shadow: 0 0 0 3px var(--color-gold-subtle);
 }
 
+.phone-input {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.phone-input .phone-country {
+  flex: 0 0 5.5rem;
+  text-align: center;
+}
+
 .intent-selector {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

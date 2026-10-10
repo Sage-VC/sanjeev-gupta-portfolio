@@ -340,6 +340,11 @@ function initContactForm() {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 
+  const phoneInput = form.querySelector('#phone');
+  phoneInput?.addEventListener('input', () => {
+    phoneInput.value = phoneInput.value.replace(/\D/g, '');
+  });
+
   const resetButton = () => {
     submitBtn.disabled = false;
     submitBtn.innerHTML = originalBtnText;
@@ -363,6 +368,8 @@ function initContactForm() {
       intent: form.querySelector('input[name="intent"]:checked')?.value || 'other',
       name,
       email,
+      phoneCountry: form.querySelector('#phone-country')?.value.trim() || '',
+      phone: form.querySelector('#phone')?.value.trim() || '',
       organisation: form.querySelector('#organisation')?.value.trim() || '',
       message,
       turnstileToken: form.querySelector('[name="cf-turnstile-response"]')?.value || ''

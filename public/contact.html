@@ -178,6 +178,14 @@
             </div>
 
             <div class="form-group">
+              <label for="phone" class="form-label">Phone Number (Optional)</label>
+              <div class="phone-input">
+                <input type="text" id="phone-country" name="phoneCountry" class="form-control phone-country" value="+91" aria-label="Country code" inputmode="tel" autocomplete="tel-country-code" pattern="\+[0-9]{1,4}" title="Country code, e.g. +91">
+                <input type="tel" id="phone" name="phone" class="form-control" placeholder="10-digit number" inputmode="numeric" autocomplete="tel-national" pattern="[0-9]{10}" title="Enter a 10-digit phone number">
+              </div>
+            </div>
+
+            <div class="form-group">
               <label for="organisation" class="form-label">Organisation / Current Role (Optional)</label>
               <input type="text" id="organisation" name="organisation" class="form-control" placeholder="e.g. Senior Director, Global Services">
             </div>

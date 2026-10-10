@@ -13,6 +13,8 @@ const INTENTS = {
   other: 'Something Else',
 };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^\d{10}$/;
+const COUNTRY_CODE_RE = /^\+\d{1,4}$/;
 
 export default {
   async fetch(request, env) {
@@ -59,6 +61,8 @@ async function handleContact(request, env) {
     intent: INTENTS[data.intent] || INTENTS.other,
     name: clean(data.name, LIMITS.name),
     email: clean(data.email, LIMITS.email),
+    phoneCountry: clean(data.phoneCountry, 5) || '+91',
+    phone: clean(data.phone, 20),
     organisation: clean(data.organisation, LIMITS.organisation),
     message: clean(data.message, LIMITS.message, true),
   };
@@ -68,6 +72,12 @@ async function handleContact(request, env) {
   }
   if (!EMAIL_RE.test(fields.email)) {
     return json({ ok: false, error: 'Please enter a valid email address.' }, 400);
+  }
+  if (fields.phone && !PHONE_RE.test(fields.phone)) {
+    return json({ ok: false, error: 'Please enter a 10-digit phone number.' }, 400);
+  }
+  if (fields.phone && !COUNTRY_CODE_RE.test(fields.phoneCountry)) {
+    return json({ ok: false, error: 'Please enter a valid country code, e.g. +91.' }, 400);
   }
 
   // Turnstile is enforced once TURNSTILE_SECRET is set as a Worker secret.
@@ -134,6 +144,7 @@ function renderText(f) {
     `Reaching out: ${f.intent}`,
     `Name: ${f.name}`,
     `Email: ${f.email}`,
+    `Phone: ${f.phone ? `${f.phoneCountry} ${f.phone}` : '-'}`,
     `Organisation / Role: ${f.organisation || '-'}`,
     '',
     'Message:',
@@ -148,12 +159,16 @@ function renderHtml(f) {
     `<tr><td style="padding:6px 12px 6px 0;color:#6b7280;vertical-align:top;white-space:nowrap">${label}</td>` +
     `<td style="padding:6px 0;color:#0F1D36">${value}</td></tr>`;
   const email = escapeHtml(f.email);
+  const phone = f.phone
+    ? `<a href="tel:${escapeHtml(f.phoneCountry + f.phone)}">${escapeHtml(`${f.phoneCountry} ${f.phone}`)}</a>`
+    : '-';
   return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#0F1D36;max-width:600px">
   <h2 style="margin:0 0 16px;font-size:18px;border-bottom:2px solid #C5A880;padding-bottom:8px">New enquiry from the website</h2>
   <table style="border-collapse:collapse;margin-bottom:16px">
     ${row('Reaching out', escapeHtml(f.intent))}
     ${row('Name', escapeHtml(f.name))}
     ${row('Email', `<a href="mailto:${email}">${email}</a>`)}
+    ${row('Phone', phone)}
     ${row('Organisation / Role', escapeHtml(f.organisation || '-'))}
   </table>
   <div style="background:#F8F6F0;border:1px solid #C5A880;border-radius:8px;padding:16px;white-space:pre-wrap">${escapeHtml(f.message)}</div>
