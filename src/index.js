@@ -31,22 +31,7 @@ export default {
       return json({ ok: false, error: 'Not found.' }, 404);
     }
 
-    const GA_ID = "G-14F7FZ5Y3J";
-const res = await env.ASSETS.fetch(request);
-const type = res.headers.get("Content-Type") || "";
-if (!type.includes("text/html")) return res;
-
-return new HTMLRewriter()
-  .on("head", {
-    element(el) {
-      el.append(
-        `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA_ID}"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');</script>`,
-        { html: true }
-      );
-    }
-  })
-  .transform(res);
+    return env.ASSETS.fetch(request);
   },
 };
 
